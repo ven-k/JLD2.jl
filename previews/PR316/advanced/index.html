@@ -15,16 +15,13 @@ julia&gt; load(&quot;example.jld2&quot;)
 └ @ JLD2 ~/.julia/dev/JLD2/src/data/reconstructing_datatypes.jl:273
 Dict{String, Any} with 1 entry:
   &quot;a&quot; =&gt; var&quot;##A#257&quot;(42)
-</code></pre><p>As of JLD2 version <code>v0.4.5</code> there is a fix. The <code>JLDFile</code> struct contains a <code>type_map</code> dictionary that allows for explicit type remapping. Now you can define a struct that matches the old definition and load your data.</p><pre><code class="language-julia">julia&gt; struct A_old
+</code></pre><p>As of JLD2 version <code>v0.4.8</code> there is a fix. The <code>JLDFile</code> struct contains a <code>typemap</code> dictionary that allows for explicit type remapping.  Now you can define a struct that matches the old definition and load your data.</p><pre><code class="language-julia">julia&gt; struct A_old
             x::Int
         end
 
-julia&gt; f = jldopen(&quot;example.jld2&quot;,&quot;r&quot;)
+julia&gt; f = jldopen(&quot;example.jld2&quot;,&quot;r&quot;; typemap=Dict(&quot;Main.A&quot; =&gt; A_old))
 JLDFile /home/jonas/.julia/dev/JLD2/example.jld2 (read-only)
  └─🔢 a
 
-julia&gt; f.type_map[&quot;Main.A&quot;] = A_old
-A_old
-
 julia&gt; f[&quot;a&quot;]
-A_old(42)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../hdf5compat/">« HDF5 Compatibility</a><a class="docs-footer-nextpage" href="../legacy/">Legacy »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Sunday 16 May 2021 18:20">Sunday 16 May 2021</span>. Using Julia version 1.6.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+A_old(42)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../hdf5compat/">« HDF5 Compatibility</a><a class="docs-footer-nextpage" href="../legacy/">Legacy »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Sunday 23 May 2021 11:10">Sunday 23 May 2021</span>. Using Julia version 1.6.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
