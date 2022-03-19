@@ -395,8 +395,7 @@ function print_header_messages(f::JLDFile, roffset::RelOffset)
                         push!(attrs, read_attribute(cio, f))
                     end
                     attr = attrs[end]
-                    println("""    name: "$(attr.name)"\n    \
-                                datatype: $(DATATYPES[attr.datatype_class])""")
+                    println("""    name: "$(attr.name)"\n    datatype: $(DATATYPES[attr.datatype_class])""")
                     try
                         data = read_attr_data(f, attr)
                         println("""    data: "$data" """)
