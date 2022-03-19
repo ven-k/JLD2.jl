@@ -550,3 +550,5 @@ include("compression.jl")
 if ccall(:jl_generating_output, Cint, ()) == 1   # if we're precompiling the package
     include("precompile.jl")
 end
+
+end
