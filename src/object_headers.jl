@@ -129,7 +129,7 @@ function isgroup(f::JLDFile, roffset::RelOffset)
         while position(io) <= pmax-4
             msg = jlread(io, HeaderMessage)
             endpos = position(io) + msg.size
-            if msg.msg_type == HM_LINK_INFO || msg.msg_type == HM_GROUP_INFO || msg.msg_type == HM_LINK_MESSAGE
+            if msg.msg_type == HM_LINK_INFO || msg.msg_type == HM_GROUP_INFO || msg.msg_type == HM_LINK_MESSAGE || msg.msg_type == HM_SYMBOL_TABLE
                 return true
             elseif msg.msg_type == HM_DATASPACE || msg.msg_type == HM_DATATYPE || msg.msg_type == HM_FILL_VALUE || msg.msg_type == HM_DATA_LAYOUT
                 return false
@@ -157,7 +157,7 @@ function isgroup(f::JLDFile, roffset::RelOffset)
                 msg = (;msg_type, size=msg_size, flags=msg_flags)
                 endpos = position(io) + msg.size
                 endpos = endpos + 8 - mod1(endpos, 8)
-                if msg.msg_type == HM_LINK_INFO || msg.msg_type == HM_GROUP_INFO || msg.msg_type == HM_LINK_MESSAGE
+                if msg.msg_type == HM_LINK_INFO || msg.msg_type == HM_GROUP_INFO || msg.msg_type == HM_LINK_MESSAGE || msg.msg_type == HM_SYMBOL_TABLE
                     return true
                 elseif msg.msg_type == HM_DATASPACE || msg.msg_type == HM_DATATYPE || msg.msg_type == HM_FILL_VALUE || msg.msg_type == HM_DATA_LAYOUT
                     return false
@@ -260,20 +260,14 @@ function print_header_messages(f::JLDFile, roffset::RelOffset)
         while (curpos = position(cio)) < chunk_end-4
             println("reading message at $(curpos)")
             if header_version == 1
-                println("now at position $(position(cio))")
-                #skip(cio, 2)
-                #println("skipped two bytes for no reason")
-                msg_type = jlread(cio, UInt16)
-                msg_size = jlread(cio, UInt16)
-                flags = jlread(cio, UInt8)
+                skip_to_aligned!(cio, chunk_start_offset)
+                # Version 1 header message is padded
+                msg = HeaderMessage(jlread(cio, UInt16), jlread(cio, UInt16), jlread(cio, UInt8))
                 skip(cio, 3)
-                endpos = curpos + 8 + msg_size
-                endpos = endpos + 8 - mod1(endpos-chunk_start_offset, 8)
-                msg = (; msg_type, size=msg_size, flags)
             else # version == 2
                 msg = jlread(cio, HeaderMessage)
-                endpos = position(cio) + msg.size
             end
+            endpos = position(cio) + msg.size
             println("""
             Header Message:  $(MESSAGE_TYPES[msg.msg_type]) ($(msg.msg_type)))
                 size: $(msg.size)
@@ -334,7 +328,7 @@ function print_header_messages(f::JLDFile, roffset::RelOffset)
                     println("    $dataspace")
                 elseif msg.msg_type == HM_DATATYPE
                     datatype_class, datatype_offset = read_datatype_message(cio, f, (msg.flags & 2) == 2)
-                    println("""    class: $class\n    offset: $datatype_offset""")
+                    println("""    class: $datatype_class\n    offset: $datatype_offset""")
                 elseif msg.msg_type == HM_FILL_VALUE_OLD
                     #(jlread(cio, UInt8) == 3 && jlread(cio, UInt8) == 0x09) || throw(UnsupportedFeatureException())
                 elseif msg.msg_type == HM_FILL_VALUE
@@ -385,9 +379,9 @@ function print_header_messages(f::JLDFile, roffset::RelOffset)
                     filter_id = jlread(cio, UInt16)
                     issupported_filter(filter_id) || throw(UnsupportedFeatureException("Unknown Compression Filter $filter_id"))
                 elseif msg.msg_type == HM_SYMBOL_TABLE
-                    v1_btree_address = jlread(cio, OffsetType)
-                    local_heap_address = jlread(cio, OffsetType)
-                    println("""    required for \"old style" groups\n    v1 B-Tree Adress: $(Int(v1_btree_address))\n    Local Heap Adress: $(Int(local_heap_address))""")
+                    v1_btree_address = jlread(cio, RelOffset)
+                    local_heap_address = jlread(cio, RelOffset)
+                    println("""    required for \"old style" groups\n    v1 B-Tree Adress: $(v1_btree_address)\n    Local Heap Adress: $(local_heap_address)""")
                 elseif msg.msg_type == HM_ATTRIBUTE
                     if attrs === EMPTY_READ_ATTRIBUTES
                         attrs = ReadAttribute[read_attribute(cio, f)]

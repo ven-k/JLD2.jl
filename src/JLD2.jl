@@ -64,6 +64,7 @@ end
 define_packed(RelOffset)
 Base.:(==)(x::RelOffset, y::RelOffset) = x === y
 Base.hash(x::RelOffset) = hash(x.offset)
+Base.:(+)(x::RelOffset, y::Integer) = RelOffset(UInt64(x.offset + y))
 
 const UNDEFINED_ADDRESS = RelOffset(0xffffffffffffffff)
 const NULL_REFERENCE = RelOffset(0)

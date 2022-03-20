@@ -289,6 +289,9 @@ function load_group(f::JLDFile, roffset::RelOffset)
     fractal_heap_address = UNDEFINED_ADDRESS
     name_index_btree = UNDEFINED_ADDRESS
 
+    v1btree_address = UNDEFINED_ADDRESS
+    name_index_heap = UNDEFINED_ADDRESS
+
     while true
         if continuation_offset != -1
             seek(io, continuation_offset)
@@ -306,8 +309,7 @@ function load_group(f::JLDFile, roffset::RelOffset)
                 # Message start 8byte aligned relative to object start
                 skip_to_aligned!(cio, chunk_start_offset)
                 # Version 1 header message is padded
-                skip(cio, 1) # first byte strictly part of of msg_type but always zero
-                msg = jlread(cio, HeaderMessage)
+                msg = HeaderMessage(jlread(cio, UInt16), jlread(cio, UInt16), jlread(cio, UInt8))
                 skip(cio, 3)
             else # header_version == 2
                 msg = jlread(cio, HeaderMessage)
@@ -355,6 +357,9 @@ function load_group(f::JLDFile, roffset::RelOffset)
                     # For correct behaviour, empty space can only be filled in the 
                     # very last chunk. Forget about previously found empty space
                     next_link_offset = -1
+                elseif msg.msg_type == HM_SYMBOL_TABLE
+                    v1btree_address = jlread(cio, RelOffset)
+                    name_index_heap = jlread(cio, RelOffset)                
                 elseif (msg.flags & 2^3) != 0
                     throw(UnsupportedFeatureException())
                 end
@@ -372,6 +377,13 @@ function load_group(f::JLDFile, roffset::RelOffset)
 
     if fractal_heap_address != UNDEFINED_ADDRESS
         records = read_btree(f, fractal_heap_address, name_index_btree)
+        for r in records
+            links[r[1]] = r[2]
+        end
+    end
+
+    if v1btree_address != UNDEFINED_ADDRESS
+        records = read_oldstyle_group(f, v1btree_address, name_index_heap)
         for r in records
             links[r[1]] = r[2]
         end

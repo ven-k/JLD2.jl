@@ -366,4 +366,103 @@ function read_btree(f, offset_hh, offset_bh)
     links
 end
 
+###########################################################################################
+##                        Old Style Group: V1 B-Tree & Name Index Heap                   ##
+###########################################################################################
 
+function read_oldstyle_group(f, v1btree_address, name_index_heap)
+    local_heap = read_local_heap_header(f, name_index_heap)
+    links = read_v1btree(f, v1btree_address)
+    map(links) do link
+        link_name = read_in_local_heap(f, local_heap, link.link_name_offset)
+        (link_name, link.obj_header_address)
+    end
+end
+
+const LOCAL_HEAP_SIGNATURE = htol(0x50414548) # UInt8['H', 'E', 'A', 'P']
+function read_local_heap_header(f, offset)
+    io = f.io
+    seek(io, fileoffset(f, offset))
+
+    signature = jlread(io, UInt32)
+    signature == LOCAL_HEAP_SIGNATURE || throw(InvalidDataException("Signature does not match."))
+
+    version = jlread(io, UInt8)
+    version == 0 || throw(UnsupportedVersionException("Local heap with version $version detected."))
+    skip(io, 3)
+    data_segment_size = jlread(io, Length)
+
+    # This field is important for computing where to add to the heap. Let's ignore that
+    offset_head_free_list = jlread(io, Length)
+    data_segment_offset = jlread(io, RelOffset)
+    (; offset=data_segment_offset, size=data_segment_size)
+end
+
+function read_in_local_heap(f, local_heap, pos)
+    io = f.io
+    offset = local_heap.offset + pos
+    println(offset)
+    seek(io, fileoffset(f, offset))
+    return read_bytestring(io)
+end
+
+const V1_BTREE_NODE_SIGNATURE = htol(0x45455254) # UInt8['T', 'R', 'E', 'E']
+function read_v1btree(f, offset)
+    io = f.io
+    seek(io, fileoffset(f, offset))
+
+    signature = jlread(io, UInt32)
+    signature == V1_BTREE_NODE_SIGNATURE || throw(InvalidDataException("Signature does not match."))
+
+    # 0 for internal node, 1 for chunked datasets
+    node_type = jlread(io, UInt8)
+    node_type == 0 || throw(InvalidDataException("Only group v1 btrees implemented"))
+    # level of node. 0 implies leaf node
+    node_level = jlread(io, UInt8)
+    # how many entries are used
+    entries_used = jlread(io, UInt16)
+    # maximum value appears to be the one from superblock
+    # but this is irrelevant for reading
+    left_sibling = jlread(io, RelOffset)
+    right_sibling = jlread(io, RelOffset)
+    links = []
+    keys = []
+    children = RelOffset[]
+    for _ = 1:entries_used
+        push!(keys, jlread(io, Length))
+        push!(children, jlread(io, RelOffset))
+    end
+    push!(keys, jlread(io, Length))
+
+    for child in children
+        if node_level > 0
+            append!(links, read_v1btree(f, child))
+        else
+            append!(links, read_symbol_table_node(f, child))
+        end
+    end
+    return links
+end
+
+const SYMBOL_TABLE_NODE_SIGNATURE = htol(0x444f4e53) # UInt8['S', 'N', 'O', 'D']
+
+function read_symbol_table_node(f, offset)
+    io = f.io
+    seek(io, fileoffset(f, offset))
+
+    signature = jlread(io, UInt32)
+    signature == SYMBOL_TABLE_NODE_SIGNATURE || throw(InvalidDataException("Signature does not match."))
+
+    version = jlread(io, UInt8)
+    skip(io, 1)
+    num_symbols = jlread(io, UInt16)
+    links = []
+
+    for _=1:num_symbols
+        link_name_offset =  jlread(io, Length) # RelOffset but this is probably wrong
+        obj_header_address = jlread(io, RelOffset)
+        skip(io, 24)
+        push!(links, (; link_name_offset, obj_header_address))
+    end
+    return links
+end
