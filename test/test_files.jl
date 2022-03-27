@@ -69,6 +69,30 @@ using Test, JLD2
         jldopen(fn) do f
             @test f["test"] == "Hello World"
         end
+
+        fn = "large_fractal_heap.h5"
+        jldopen(fn) do f
+            @test length(keys(f)) == 200000
+        end
+
+        fn = "netcdf.nc"
+        jldopen(fn) do f
+            @test f["hello"] == ones(5)
+            @test_broken f["x"]
+            @test_broken f["z"]
+            @test f["grouped/data"] == 0:9
+            @test_broken f["grouped/y"]
+        end
+
+        # julia> using JLD
+        # julia> struct A; x::Int; y::Float64; z::String; end
+        # julia> save("jldstruct.jld", "a", A(1,2.0,"3"))
+        fn = "jldstruct.jl"
+        jldopen(fn) do f
+            a = f["a"]
+            @test a.x == 1
+            @test a.y == 2.0
+            @test a.z == "3"
+        end
     end
 end
-
