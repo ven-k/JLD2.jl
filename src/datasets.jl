@@ -179,7 +179,7 @@ function read_data(f::JLDFile, dataspace::ReadDataspace,
         seek(io, data_offset)
         read_dataspace = (dataspace, header_offset, data_length, filter_id)
         read_data(f, rr, read_dataspace, attributes)
-    elseif data_offset == typemax(Int)
+    elseif data_offset == typemax(Int64)
         seek(io, datatype_offset)
         @read_datatype io datatype_class dt begin
             rr = jltype(f, dt)
