@@ -183,7 +183,9 @@ function read_data(f::JLDFile, dataspace::ReadDataspace,
         seek(io, datatype_offset)
         @read_datatype io datatype_class dt begin
             rr = jltype(f, dt)
-            return Array{typeof(rr).parameters[1], 1}()
+            v = Array{typeof(rr).parameters[1], 1}()
+            header_offset !== NULL_REFERENCE && (f.jloffset[header_offset] = WeakRef(v))
+            return v
         end
     else
         seek(io, datatype_offset)
