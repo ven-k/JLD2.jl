@@ -215,7 +215,7 @@ function read_data(f::JLDFile,
     elseif dataspace.dataspace_type == DS_V1
         read_array(f, dataspace, rr, data_length, filter_id, header_offset, attributes)
     else
-        @info "dataspace type is $(dataspace_type)"
+        @info "dataspace type is $(dataspace.dataspace_type)"
         throw(UnsupportedFeatureException())
     end
 end

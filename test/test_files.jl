@@ -87,7 +87,7 @@ using Test, JLD2
         # julia> using JLD
         # julia> struct A; x::Int; y::Float64; z::String; end
         # julia> save("jldstruct.jld", "a", A(1,2.0,"3"))
-        fn = "jldstruct.jl"
+        fn = "jldstruct.jld"
         jldopen(fn) do f
             a = f["a"]
             @test a.x == 1
