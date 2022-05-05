@@ -1,5 +1,5 @@
 let 
-    mktemp() do path, _
+    mktemp() do path, io
 
         a=1
         b=2.0
@@ -18,7 +18,7 @@ let
                 f[k]
             end
         end
-        close(_)
+        close(io)
         nothing
     end
 end
