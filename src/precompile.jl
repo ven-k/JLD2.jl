@@ -18,7 +18,7 @@ let
                 f[k]
             end
         end
-
+        close(_)
         nothing
     end
 end
