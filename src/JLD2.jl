@@ -294,9 +294,9 @@ function jldopen(fname::AbstractString, wr::Bool, create::Bool, truncate::Bool, 
             end
         end
 
+        rname = realpath(fname)
         io = openfile(iotype, fname, wr, create, truncate, fallback)
         created = !exists || truncate
-        rname = realpath(fname)
         f = JLDFile(io, rname, wr, created, compress, mmaparrays)
         OPEN_FILES[rname] = WeakRef(f)
         f
